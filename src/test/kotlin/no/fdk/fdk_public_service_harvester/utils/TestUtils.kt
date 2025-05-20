@@ -96,7 +96,7 @@ private fun isOK(response: Int?): Boolean =
     if (response == null) false
     else HttpStatus.resolve(response)?.is2xxSuccessful == true
 
-fun populateDB() {
+fun resetDB() {
     val connectionString =
         ConnectionString("mongodb://${MONGO_USER}:${MONGO_PASSWORD}@localhost:${mongoContainer.getMappedPort(MONGO_PORT)}/$MONGO_COLLECTION?authSource=admin&authMechanism=SCRAM-SHA-1")
     val pojoCodecRegistry = CodecRegistries.fromRegistries(
@@ -108,24 +108,31 @@ fun populateDB() {
     val mongoDatabase = client.getDatabase(MONGO_COLLECTION).withCodecRegistry(pojoCodecRegistry)
 
     val sourceCollection = mongoDatabase.getCollection("harvestSourceTurtle")
+    sourceCollection.deleteMany(org.bson.Document())
     sourceCollection.insertMany(sourceTurtleDBPopulation())
 
     val serviceTurtleCollection = mongoDatabase.getCollection("serviceTurtle")
+    serviceTurtleCollection.deleteMany(org.bson.Document())
     serviceTurtleCollection.insertMany(serviceTurtleDBPopulation())
 
     val fdkServiceTurtleCollection = mongoDatabase.getCollection("fdkServiceTurtle")
+    fdkServiceTurtleCollection.deleteMany(org.bson.Document())
     fdkServiceTurtleCollection.insertMany(fdkTurtleDBPopulation())
 
     val catalogTurtleCollection = mongoDatabase.getCollection("catalogTurtle")
+    catalogTurtleCollection.deleteMany(org.bson.Document())
     catalogTurtleCollection.insertMany(catalogTurtleDBPopulation())
 
     val fdkCatalogTurtleCollection = mongoDatabase.getCollection("fdkCatalogTurtle")
+    fdkCatalogTurtleCollection.deleteMany(org.bson.Document())
     fdkCatalogTurtleCollection.insertMany(fdkCatalogTurtleDBPopulation())
 
     val serviceMetaCollection = mongoDatabase.getCollection("serviceMeta")
+    serviceMetaCollection.deleteMany(org.bson.Document())
     serviceMetaCollection.insertMany(metaDBPopulation())
 
     val catalogMetaCollection = mongoDatabase.getCollection("catalogMeta")
+    catalogMetaCollection.deleteMany(org.bson.Document())
     catalogMetaCollection.insertMany(metaCatalogPopulation())
 
     client.close()
