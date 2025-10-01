@@ -109,31 +109,31 @@ fun resetDB() {
 
     val sourceCollection = mongoDatabase.getCollection("harvestSourceTurtle")
     sourceCollection.deleteMany(org.bson.Document())
-    sourceCollection.insertMany(sourceTurtleDBPopulation())
+    sourceTurtleDBPopulation().forEach { sourceCollection.insertOne(it) }
 
     val serviceTurtleCollection = mongoDatabase.getCollection("serviceTurtle")
     serviceTurtleCollection.deleteMany(org.bson.Document())
-    serviceTurtleCollection.insertMany(serviceTurtleDBPopulation())
+    serviceTurtleDBPopulation().forEach { serviceTurtleCollection.insertOne(it) }
 
     val fdkServiceTurtleCollection = mongoDatabase.getCollection("fdkServiceTurtle")
     fdkServiceTurtleCollection.deleteMany(org.bson.Document())
-    fdkServiceTurtleCollection.insertMany(fdkTurtleDBPopulation())
+    fdkTurtleDBPopulation().forEach { fdkServiceTurtleCollection.insertOne(it) }
 
     val catalogTurtleCollection = mongoDatabase.getCollection("catalogTurtle")
     catalogTurtleCollection.deleteMany(org.bson.Document())
-    catalogTurtleCollection.insertMany(catalogTurtleDBPopulation())
+    catalogTurtleDBPopulation().forEach { catalogTurtleCollection.insertOne(it) }
 
     val fdkCatalogTurtleCollection = mongoDatabase.getCollection("fdkCatalogTurtle")
     fdkCatalogTurtleCollection.deleteMany(org.bson.Document())
-    fdkCatalogTurtleCollection.insertMany(fdkCatalogTurtleDBPopulation())
+    fdkCatalogTurtleDBPopulation().forEach { fdkCatalogTurtleCollection.insertOne(it) }
 
     val serviceMetaCollection = mongoDatabase.getCollection("serviceMeta")
     serviceMetaCollection.deleteMany(org.bson.Document())
-    serviceMetaCollection.insertMany(metaDBPopulation())
+    metaDBPopulation().forEach { serviceMetaCollection.insertOne(it) }
 
     val catalogMetaCollection = mongoDatabase.getCollection("catalogMeta")
     catalogMetaCollection.deleteMany(org.bson.Document())
-    catalogMetaCollection.insertMany(metaCatalogPopulation())
+    metaCatalogPopulation().forEach { catalogMetaCollection.insertOne(it) }
 
     client.close()
 }
