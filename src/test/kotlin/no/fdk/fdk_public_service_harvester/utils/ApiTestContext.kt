@@ -1,5 +1,7 @@
 package no.fdk.fdk_public_service_harvester.utils
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.slf4j.LoggerFactory
 import org.springframework.boot.test.util.TestPropertyValues
@@ -15,6 +17,7 @@ abstract class ApiTestContext {
 
     @BeforeEach
     fun resetDatabase() {
+        runBlocking { delay(1000) }
         resetDB()
     }
 
