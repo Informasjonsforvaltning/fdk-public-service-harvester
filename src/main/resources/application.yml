@@ -22,8 +22,8 @@ spring:
     database: publicServiceHarvester
     auto-index-creation: true
   security.oauth2.resourceserver.jwt:
-    jwk-set-uri: ${KEYCLOAK_OIDC_ISSUER:https://keycloak.staging.fellesdatakatalog.digdir.no/realms/fdk}/protocol/openid-connect/certs
-    issuer-uri: ${KEYCLOAK_OIDC_ISSUER:https://keycloak.staging.fellesdatakatalog.digdir.no/realms/fdk}
+    jwk-set-uri: ${KEYCLOAK_OIDC_ISSUER:https://auth.staging.fellesdatakatalog.digdir.no/realms/fdk}/protocol/openid-connect/certs
+    issuer-uri: ${KEYCLOAK_OIDC_ISSUER:https://auth.staging.fellesdatakatalog.digdir.no/realms/fdk}
 application:
   organizationsUri: ${ORGANIZATION_CATALOG_URI:https://organization-catalog.staging.fellesdatakatalog.digdir.no}/organizations
   publicServiceHarvesterUri: ${FDK_BASE_URI:https://staging.fellesdatakatalog.digdir.no}/public-services
