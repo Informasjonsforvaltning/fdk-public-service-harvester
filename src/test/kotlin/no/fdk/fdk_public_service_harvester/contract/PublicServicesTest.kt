@@ -31,40 +31,6 @@ class PublicServicesTest : ApiTestContext() {
     private val mapper = jacksonObjectMapper()
 
     @Test
-    fun findAllWithRecords() {
-        val response = apiGet("/public-services?catalogrecords=true", "text/turtle", port)
-        Assumptions.assumeTrue(HttpStatus.OK.value() == response["status"])
-
-        val expected = responseReader.parseFile("all_catalogs.ttl", "TURTLE")
-        val responseModel = responseReader.parseResponse(response["body"] as String, "TURTLE")
-
-        assertTrue(
-            checkIfIsomorphicAndPrintDiff(
-                actual = responseModel,
-                expected = expected,
-                name = "ServicesTest.findAll"
-            )
-        )
-    }
-
-    @Test
-    fun findAllNoRecords() {
-        val response = apiGet("/public-services", "application/trig", port)
-        Assumptions.assumeTrue(HttpStatus.OK.value() == response["status"])
-
-        val expected = responseReader.parseFile("no_meta_all_services.ttl", "TURTLE")
-        val responseModel = responseReader.parseResponse(response["body"] as String, Lang.TRIG.name)
-
-        assertTrue(
-            checkIfIsomorphicAndPrintDiff(
-                actual = responseModel,
-                expected = expected,
-                name = "ServicesTest.findAll"
-            )
-        )
-    }
-
-    @Test
     fun findSpecificWithRecords() {
         val response = apiGet("/public-services/$SERVICE_ID_0?catalogrecords=true", "application/rdf+json", port)
         Assumptions.assumeTrue(HttpStatus.OK.value() == response["status"])
