@@ -27,7 +27,7 @@ class PublicServicesHarvester(
     private val applicationProperties: ApplicationProperties
 ) {
 
-    fun harvestServices(source: HarvestDataSource, harvestDate: Calendar, forceUpdate: Boolean): HarvestReport? =
+    fun harvestServices(source: HarvestDataSource, harvestDate: Calendar, forceUpdate: Boolean, runId: String? = null): HarvestReport? =
         if (source.id != null && source.url != null) {
             try {
                 LOGGER.debug("Starting harvest of ${source.url}")
@@ -39,6 +39,9 @@ class PublicServicesHarvester(
                             HarvestException(source.url)
                         )
                         HarvestReport(
+                            runId = runId,
+                            dataSourceId = source.id,
+                            dataSourceUrl = source.url,
                             id = source.id,
                             url = source.url,
                             harvestError = true,
@@ -53,6 +56,9 @@ class PublicServicesHarvester(
                             HarvestException(source.url)
                         )
                         HarvestReport(
+                            runId = runId,
+                            dataSourceId = source.id,
+                            dataSourceUrl = source.url,
                             id = source.id,
                             url = source.url,
                             harvestError = true,
@@ -63,12 +69,15 @@ class PublicServicesHarvester(
                     }
                     else -> updateIfChanged(
                         parseRDFResponse(adapter.fetchServices(source), jenaWriterType),
-                        source.id, source.url, harvestDate, source.publisherId, forceUpdate
+                        runId, source.id, source.url, harvestDate, source.publisherId, forceUpdate
                     )
                 }
             } catch (ex: Exception) {
                 LOGGER.error("Harvest of ${source.url} failed", ex)
                 HarvestReport(
+                    runId = runId,
+                    dataSourceId = source.id,
+                    dataSourceUrl = source.url,
                     id = source.id,
                     url = source.url,
                     harvestError = true,
@@ -82,7 +91,7 @@ class PublicServicesHarvester(
             null
         }
 
-    private fun updateIfChanged(harvested: Model, sourceId: String, sourceURL: String, harvestDate: Calendar,
+    private fun updateIfChanged(harvested: Model, runId: String?, sourceId: String, sourceURL: String, harvestDate: Calendar,
                                 publisherId: String?, forceUpdate: Boolean): HarvestReport {
         val dbData = turtleService
             .getHarvestSource(sourceURL)
@@ -91,6 +100,9 @@ class PublicServicesHarvester(
         return if (!forceUpdate && dbData != null && harvested.isIsomorphicWith(dbData)) {
             LOGGER.info("No changes from last harvest of $sourceURL")
             HarvestReport(
+                runId = runId,
+                dataSourceId = sourceId,
+                dataSourceUrl = sourceURL,
                 id = sourceId,
                 url = sourceURL,
                 harvestError = false,
@@ -101,11 +113,11 @@ class PublicServicesHarvester(
             LOGGER.info("Changes detected, saving data from $sourceURL and updating FDK meta data")
             turtleService.saveAsHarvestSource(harvested, sourceURL)
 
-            updateDB(harvested, sourceId, sourceURL, harvestDate, publisherId, forceUpdate)
+            updateDB(harvested, runId, sourceId, sourceURL, harvestDate, publisherId, forceUpdate)
         }
     }
 
-    private fun updateDB(harvested: Model, sourceId: String, sourceURL: String, harvestDate: Calendar,
+    private fun updateDB(harvested: Model, runId: String?, sourceId: String, sourceURL: String, harvestDate: Calendar,
                          publisherId: String?, forceUpdate: Boolean): HarvestReport {
         val allServices = splitServicesFromRDF(harvested, sourceURL)
         val updatedServices = updateServices(allServices, harvestDate, forceUpdate)
@@ -125,6 +137,9 @@ class PublicServicesHarvester(
             .run { serviceMetaRepository.saveAll(this) }
 
         return HarvestReport(
+            runId = runId,
+            dataSourceId = sourceId,
+            dataSourceUrl = sourceURL,
             id = sourceId,
             url = sourceURL,
             harvestError = false,
