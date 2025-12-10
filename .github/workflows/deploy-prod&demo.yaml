@@ -4,10 +4,10 @@ permissions:
   contents: read
   packages: write
 
-on:
-  push:
-    branches:
-      - main
+#on:
+#  push:
+#    branches:
+#      - main
 
 jobs:
   build-fdk-public-service-harvester:
