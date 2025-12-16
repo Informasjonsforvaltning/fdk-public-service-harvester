@@ -54,13 +54,8 @@ open class ServicesController(
     fun getServices(
         httpServletRequest: HttpServletRequest,
         @RequestParam(value = "catalogrecords", required = false) catalogRecords: Boolean = false
-    ): ResponseEntity<String> {
-        LOGGER.info("get all services")
-        val returnType = jenaTypeFromAcceptHeader(httpServletRequest.getHeader("Accept"))
-
-        return if (returnType == Lang.RDFNULL) ResponseEntity(HttpStatus.NOT_ACCEPTABLE)
-        else ResponseEntity(publicServicesService.getAllServices(returnType ?: Lang.TURTLE, catalogRecords), HttpStatus.OK)
-    }
+    ): ResponseEntity<Void> =
+        ResponseEntity(HttpStatus.MOVED_PERMANENTLY)
 
     @PostMapping("/{id}/remove")
     fun removeServiceById(

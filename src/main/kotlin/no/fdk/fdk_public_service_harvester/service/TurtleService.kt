@@ -21,8 +21,6 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import kotlin.text.Charsets.UTF_8
 
-const val UNION_ID = "union-graph"
-
 @Service
 class TurtleService(
     private val harvestSourceRepository: HarvestSourceTurtleRepository,
@@ -31,32 +29,6 @@ class TurtleService(
     private val catalogRepository: CatalogTurtleRepository,
     private val fdkCatalogRepository: FDKCatalogTurtleRepository
 ) {
-
-    fun saveAsCatalogUnion(model: Model, withRecords: Boolean) {
-        if (withRecords) fdkCatalogRepository.save(model.createFDKCatalogTurtleDBO(UNION_ID))
-        else catalogRepository.save(model.createCatalogTurtleDBO(UNION_ID))
-    }
-
-    fun getCatalogUnion(withRecords: Boolean): String? =
-        if (withRecords) fdkCatalogRepository.findByIdOrNull(UNION_ID)
-            ?.turtle
-            ?.let { ungzip(it) }
-        else catalogRepository.findByIdOrNull(UNION_ID)
-            ?.turtle
-            ?.let { ungzip(it) }
-
-    fun saveAsServiceUnion(model: Model, withRecords: Boolean) {
-        if (withRecords) fdkServiceRepository.save(model.createFDKPublicServiceTurtleDBO(UNION_ID))
-        else serviceRepository.save(model.createPublicServiceTurtleDBO(UNION_ID))
-    }
-
-    fun getServiceUnion(withRecords: Boolean): String? =
-        if (withRecords) fdkServiceRepository.findByIdOrNull(UNION_ID)
-            ?.turtle
-            ?.let { ungzip(it) }
-        else serviceRepository.findByIdOrNull(UNION_ID)
-            ?.turtle
-            ?.let { ungzip(it) }
 
     fun saveAsCatalog(model: Model, fdkId: String, withRecords: Boolean) {
         if (withRecords) {

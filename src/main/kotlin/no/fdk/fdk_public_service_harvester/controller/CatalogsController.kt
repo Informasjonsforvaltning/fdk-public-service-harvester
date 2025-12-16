@@ -40,11 +40,7 @@ open class CatalogsController(private val publicServicesService: PublicServicesS
     fun getCatalogs(
         httpServletRequest: HttpServletRequest,
         @RequestParam(value = "catalogrecords", required = false) catalogRecords: Boolean = false
-    ): ResponseEntity<String> {
-        val returnType = jenaTypeFromAcceptHeader(httpServletRequest.getHeader("Accept"))
-
-        return if (returnType == Lang.RDFNULL) ResponseEntity(HttpStatus.NOT_ACCEPTABLE)
-        else ResponseEntity(publicServicesService.getCatalogs(returnType ?: Lang.TURTLE, catalogRecords), HttpStatus.OK)
-    }
+    ): ResponseEntity<String> =
+        ResponseEntity(HttpStatus.MOVED_PERMANENTLY)
 
 }

@@ -34,17 +34,17 @@ class HarvesterTest {
 
     @Test
     fun harvestDataSourceSavedWhenDBIsEmpty() {
-        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE))
+        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE.dataSourceUrl!!, TEST_HARVEST_SOURCE.acceptHeader!!))
             .thenReturn(responseReader.readFile("harvest_response_0.ttl"))
         whenever(valuesMock.publicServiceHarvesterUri)
             .thenReturn("http://localhost:5050/public-services")
 
-        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE, false)
+        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE)
 
         argumentCaptor<Model, String>().apply {
             verify(turtleService, times(1)).saveAsHarvestSource(first.capture(), second.capture())
             assertTrue(first.firstValue.isIsomorphicWith(responseReader.parseFile("harvest_response_0.ttl", "TURTLE")))
-            Assertions.assertEquals(TEST_HARVEST_SOURCE.url, second.firstValue)
+            Assertions.assertEquals(TEST_HARVEST_SOURCE.dataSourceUrl, second.firstValue)
         }
 
         argumentCaptor<Model, String, Boolean>().apply {
@@ -75,8 +75,9 @@ class HarvesterTest {
         }
 
         val expectedReport = HarvestReport(
-            id="test-source",
-            url="http://localhost:5050/fdk-public-service-publisher.ttl",
+            runId="run0",
+            dataSourceId="test-source",
+            dataSourceUrl="http://localhost:5050/fdk-public-service-publisher.ttl",
             dataType="publicService",
             harvestError=false,
             startTime = "2020-10-05 15:15:39 +0200",
@@ -93,22 +94,23 @@ class HarvesterTest {
     @Test
     fun harvestDataSourceNotPersistedWhenNoChangesFromDB() {
         val harvested = responseReader.readFile("harvest_response_0.ttl")
-        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE))
+        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE.dataSourceUrl!!, TEST_HARVEST_SOURCE.acceptHeader!!))
             .thenReturn(harvested)
         whenever(valuesMock.publicServiceHarvesterUri)
             .thenReturn("http://localhost:5050/public-services")
-        whenever(turtleService.getHarvestSource(TEST_HARVEST_SOURCE.url!!))
+        whenever(turtleService.getHarvestSource(TEST_HARVEST_SOURCE.dataSourceUrl))
             .thenReturn(harvested)
 
-        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE, false)
+        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE)
 
         verify(turtleService, times(0)).saveAsHarvestSource(any(), any())
         verify(turtleService, times(0)).saveAsPublicService(any(), any(), any())
         verify(metaRepository, times(0)).save(any())
 
         val expectedReport = HarvestReport(
-            id="test-source",
-            url="http://localhost:5050/fdk-public-service-publisher.ttl",
+            runId="run0",
+            dataSourceId="test-source",
+            dataSourceUrl="http://localhost:5050/fdk-public-service-publisher.ttl",
             dataType="publicService",
             harvestError=false,
             startTime = "2020-10-05 15:15:39 +0200",
@@ -121,11 +123,11 @@ class HarvesterTest {
     @Test
     fun noChangesIgnoredWhenForceUpdateIsTrue() {
         val harvested = responseReader.readFile("harvest_response_0.ttl")
-        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE))
+        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE.dataSourceUrl!!, TEST_HARVEST_SOURCE.acceptHeader!!))
             .thenReturn(harvested)
         whenever(valuesMock.publicServiceHarvesterUri)
             .thenReturn("http://localhost:5050/public-services")
-        whenever(turtleService.getHarvestSource(TEST_HARVEST_SOURCE.url!!))
+        whenever(turtleService.getHarvestSource(TEST_HARVEST_SOURCE.dataSourceUrl))
             .thenReturn(harvested)
         whenever(metaRepository.findById(SERVICE_META_0.uri))
             .thenReturn(Optional.of(SERVICE_META_0))
@@ -146,14 +148,15 @@ class HarvesterTest {
         whenever(turtleService.getPublicService(SERVICE_ID_3, withRecords = false))
             .thenReturn(responseReader.readFile("no_meta_service_3.ttl"))
 
-        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE, true)
+        val report = harvester.harvestServices(TEST_HARVEST_SOURCE.copy(forceUpdate = true), TEST_HARVEST_DATE)
 
         verify(turtleService, times(1)).saveAsHarvestSource(any(), any())
         verify(turtleService, times(4)).saveAsPublicService(any(), any(), any())
 
         val expectedReport = HarvestReport(
-            id="test-source",
-            url="http://localhost:5050/fdk-public-service-publisher.ttl",
+            runId="run0",
+            dataSourceId="test-source",
+            dataSourceUrl="http://localhost:5050/fdk-public-service-publisher.ttl",
             dataType="publicService",
             harvestError=false,
             startTime = "2020-10-05 15:15:39 +0200",
@@ -171,11 +174,11 @@ class HarvesterTest {
 
     @Test
     fun onlyRelevantUpdatedWhenHarvestedFromDB() {
-        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE))
+        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE.dataSourceUrl!!, TEST_HARVEST_SOURCE.acceptHeader!!))
             .thenReturn(responseReader.readFile("harvest_response_0.ttl"))
         whenever(valuesMock.publicServiceHarvesterUri)
             .thenReturn("http://localhost:5050/public-services")
-        whenever(turtleService.getHarvestSource(TEST_HARVEST_SOURCE.url!!))
+        whenever(turtleService.getHarvestSource(TEST_HARVEST_SOURCE.dataSourceUrl))
             .thenReturn(responseReader.readFile("harvest_response_0_diff.ttl"))
         whenever(metaRepository.findById(SERVICE_META_0.uri))
             .thenReturn(Optional.of(SERVICE_META_0))
@@ -202,12 +205,12 @@ class HarvesterTest {
         whenever(turtleService.getCatalog(CATALOG_ID_0, false))
             .thenReturn(responseReader.readFile("no_meta_catalog_0_diff.ttl"))
 
-        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, NEW_TEST_HARVEST_DATE, false)
+        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, NEW_TEST_HARVEST_DATE)
 
         argumentCaptor<Model, String>().apply {
             verify(turtleService, times(1)).saveAsHarvestSource(first.capture(), second.capture())
             assertTrue(first.firstValue.isIsomorphicWith(responseReader.parseFile("harvest_response_0.ttl", "TURTLE")))
-            Assertions.assertEquals(TEST_HARVEST_SOURCE.url, second.firstValue)
+            Assertions.assertEquals(TEST_HARVEST_SOURCE.dataSourceUrl, second.firstValue)
         }
 
         argumentCaptor<Model, String, Boolean>().apply {
@@ -223,8 +226,9 @@ class HarvesterTest {
         }
 
         val expectedReport = HarvestReport(
-            id="test-source",
-            url="http://localhost:5050/fdk-public-service-publisher.ttl",
+            runId="run0",
+            dataSourceId="test-source",
+            dataSourceUrl="http://localhost:5050/fdk-public-service-publisher.ttl",
             dataType="publicService",
             harvestError=false,
             startTime = "2020-10-15 13:52:16 +0200",
@@ -239,20 +243,21 @@ class HarvesterTest {
 
     @Test
     fun harvestWithErrorsIsNotPersisted() {
-        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE))
+        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE.dataSourceUrl!!, TEST_HARVEST_SOURCE.acceptHeader!!))
             .thenReturn(responseReader.readFile("harvest_error_response.ttl"))
         whenever(valuesMock.publicServiceHarvesterUri)
             .thenReturn("http://localhost:5050/public-services")
 
-        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE, false)
+        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE)
 
         verify(turtleService, times(0)).saveAsHarvestSource(any(), any())
         verify(turtleService, times(0)).saveAsPublicService(any(), any(), any())
         verify(metaRepository, times(0)).save(any())
 
         val expectedReport = HarvestReport(
-            id="test-source",
-            url="http://localhost:5050/fdk-public-service-publisher.ttl",
+            runId="run0",
+            dataSourceId="test-source",
+            dataSourceUrl="http://localhost:5050/fdk-public-service-publisher.ttl",
             dataType="publicService",
             harvestError=true,
             errorMessage = "[line: 4, col: 3 ] Undefined prefix: dct",
@@ -265,17 +270,17 @@ class HarvesterTest {
 
     @Test
     fun harvestDataSourceWithCatalog() {
-        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE))
+        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE.dataSourceUrl!!, TEST_HARVEST_SOURCE.acceptHeader!!))
             .thenReturn(responseReader.readFile("harvest_response_1.ttl"))
         whenever(valuesMock.publicServiceHarvesterUri)
             .thenReturn("http://localhost:5050/public-services")
 
-        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE, false)
+        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE)
 
         argumentCaptor<Model, String>().apply {
             verify(turtleService, times(1)).saveAsHarvestSource(first.capture(), second.capture())
             assertTrue(first.firstValue.isIsomorphicWith(responseReader.parseFile("harvest_response_1.ttl", "TURTLE")))
-            Assertions.assertEquals(TEST_HARVEST_SOURCE.url, second.firstValue)
+            Assertions.assertEquals(TEST_HARVEST_SOURCE.dataSourceUrl, second.firstValue)
         }
 
         argumentCaptor<Model, String, Boolean>().apply {
@@ -290,8 +295,9 @@ class HarvesterTest {
         verify(catalogMetaRepository, times(2)).save(any())
 
         val expectedReport = HarvestReport(
-            id="test-source",
-            url="http://localhost:5050/fdk-public-service-publisher.ttl",
+            runId="run0",
+            dataSourceId="test-source",
+            dataSourceUrl="http://localhost:5050/fdk-public-service-publisher.ttl",
             dataType="publicService",
             harvestError=false,
             startTime = "2020-10-05 15:15:39 +0200",
@@ -311,22 +317,23 @@ class HarvesterTest {
     fun ableToHarvestEmptyCollection() {
         val prev = responseReader.readFile("harvest_response_0.ttl")
         val harvested = responseReader.readFile("harvest_response_empty.ttl")
-        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE))
+        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE.dataSourceUrl!!, TEST_HARVEST_SOURCE.acceptHeader!!))
             .thenReturn(harvested)
         whenever(valuesMock.publicServiceHarvesterUri)
             .thenReturn("http://localhost:5050/public-services")
-        whenever(turtleService.getHarvestSource(TEST_HARVEST_SOURCE.url!!))
+        whenever(turtleService.getHarvestSource(TEST_HARVEST_SOURCE.dataSourceUrl))
             .thenReturn(prev)
         whenever(metaRepository.findAllByIsPartOf("http://localhost:5050/public-services/catalogs/${CATALOG_META_0.fdkId}"))
             .thenReturn(listOf(SERVICE_META_0, SERVICE_META_1, SERVICE_META_2, SERVICE_META_3))
         whenever(metaRepository.saveAll(listOf(SERVICE_META_0.copy(removed = true), SERVICE_META_1.copy(removed = true), SERVICE_META_2.copy(removed = true), SERVICE_META_3.copy(removed = true))))
             .thenReturn(listOf(SERVICE_META_0.copy(removed = true), SERVICE_META_1.copy(removed = true), SERVICE_META_2.copy(removed = true), SERVICE_META_3.copy(removed = true)))
 
-        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE, false)
+        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE)
 
         val expectedReport = HarvestReport(
-            id="test-source",
-            url="http://localhost:5050/fdk-public-service-publisher.ttl",
+            runId="run0",
+            dataSourceId="test-source",
+            dataSourceUrl="http://localhost:5050/fdk-public-service-publisher.ttl",
             dataType="publicService",
             harvestError=false,
             startTime = "2020-10-05 15:15:39 +0200",
@@ -340,9 +347,9 @@ class HarvesterTest {
     @Test
     fun earlierRemovedServiceWithNoChangesAddedToReport() {
         val harvested = responseReader.readFile("harvest_response_0.ttl")
-        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE))
+        whenever(adapter.fetchServices(TEST_HARVEST_SOURCE.dataSourceUrl!!, TEST_HARVEST_SOURCE.acceptHeader!!))
             .thenReturn(harvested)
-        whenever(turtleService.getHarvestSource(TEST_HARVEST_SOURCE.url!!))
+        whenever(turtleService.getHarvestSource(TEST_HARVEST_SOURCE.dataSourceUrl))
             .thenReturn(responseReader.readFile("harvest_response_empty.ttl"))
         whenever(metaRepository.findById(SERVICE_META_0.uri))
             .thenReturn(Optional.of(SERVICE_META_0.copy(removed = true)))
@@ -366,7 +373,7 @@ class HarvesterTest {
         whenever(valuesMock.publicServiceHarvesterUri)
             .thenReturn("http://localhost:5050/public-services")
 
-        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE, false)
+        val report = harvester.harvestServices(TEST_HARVEST_SOURCE, TEST_HARVEST_DATE)
 
         argumentCaptor<PublicServiceMeta>().apply {
             verify(metaRepository, times(1)).save(capture())
@@ -374,8 +381,9 @@ class HarvesterTest {
         }
 
         val expectedReport = HarvestReport(
-            id="test-source",
-            url="http://localhost:5050/fdk-public-service-publisher.ttl",
+            runId="run0",
+            dataSourceId="test-source",
+            dataSourceUrl="http://localhost:5050/fdk-public-service-publisher.ttl",
             dataType="publicService",
             harvestError=false,
             startTime = "2020-10-05 15:15:39 +0200",

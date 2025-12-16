@@ -27,43 +27,6 @@ class UpdateService (
     private val turtleService: TurtleService
 ) {
 
-    fun updateUnionModels() {
-        val serviceUnion = ModelFactory.createDefaultModel()
-        val serviceUnionNoRecords = ModelFactory.createDefaultModel()
-
-        serviceMetaRepository.findAll()
-            .forEach {
-                turtleService.getPublicService(it.fdkId, withRecords = true)
-                    ?.let { dboTurtle -> safeParseRDF(dboTurtle, Lang.TURTLE) }
-                    ?.run { serviceUnion.add(this) }
-
-                turtleService.getPublicService(it.fdkId, withRecords = false)
-                    ?.let { dboTurtle -> safeParseRDF(dboTurtle, Lang.TURTLE) }
-                    ?.run { serviceUnionNoRecords.add(this) }
-            }
-
-        turtleService.saveAsServiceUnion(serviceUnion, true)
-        turtleService.saveAsServiceUnion(serviceUnionNoRecords, false)
-
-        val catalogUnion = ModelFactory.createDefaultModel()
-        val catalogUnionNoRecords = ModelFactory.createDefaultModel()
-
-        catalogMetaRepository.findAll()
-            .filter { it.services.isNotEmpty() }
-            .forEach {
-                turtleService.getCatalog(it.fdkId, withRecords = true)
-                    ?.let { turtle -> safeParseRDF(turtle, Lang.TURTLE) }
-                    ?.run { catalogUnion.add(this) }
-
-                turtleService.getCatalog(it.fdkId, withRecords = false)
-                    ?.let { turtle -> safeParseRDF(turtle, Lang.TURTLE) }
-                    ?.run { catalogUnionNoRecords.add(this) }
-            }
-
-        turtleService.saveAsCatalogUnion(catalogUnion, true)
-        turtleService.saveAsCatalogUnion(catalogUnionNoRecords, false)
-    }
-
     fun updateMetaData() {
         catalogMetaRepository.findAll()
             .forEach { catalog ->
@@ -99,8 +62,6 @@ class UpdateService (
                     )
                 }
             }
-
-        updateUnionModels()
     }
 
     private fun CatalogMeta.createMetaModel(): Model {

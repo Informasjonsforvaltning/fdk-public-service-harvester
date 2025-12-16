@@ -27,20 +27,21 @@ class PublicServicesHarvester(
     private val applicationProperties: ApplicationProperties
 ) {
 
-    fun harvestServices(source: HarvestDataSource, harvestDate: Calendar, forceUpdate: Boolean): HarvestReport? =
-        if (source.id != null && source.url != null) {
+    fun harvestServices(trigger: HarvestTrigger, harvestDate: Calendar): HarvestReport? =
+        if (trigger.runId != null && trigger.dataSourceUrl != null) {
             try {
-                LOGGER.debug("Starting harvest of ${source.url}")
+                LOGGER.debug("Starting harvest of ${trigger.dataSourceUrl}")
 
-                when (val jenaWriterType = jenaTypeFromAcceptHeader(source.acceptHeaderValue)) {
+                when (val jenaWriterType = jenaTypeFromAcceptHeader(trigger.acceptHeader)) {
                     null -> {
                         LOGGER.error(
-                            "Not able to harvest from ${source.url}, no accept header supplied",
-                            HarvestException(source.url)
+                            "Not able to harvest from ${trigger.dataSourceUrl}, no accept header supplied",
+                            HarvestException(trigger.dataSourceUrl)
                         )
                         HarvestReport(
-                            id = source.id,
-                            url = source.url,
+                            runId = trigger.runId,
+                            dataSourceId = trigger.dataSourceId,
+                            dataSourceUrl = trigger.dataSourceUrl,
                             harvestError = true,
                             errorMessage = "Not able to harvest, no accept header supplied",
                             startTime = harvestDate.formatWithOsloTimeZone(),
@@ -49,12 +50,13 @@ class PublicServicesHarvester(
                     }
                     Lang.RDFNULL -> {
                         LOGGER.error(
-                            "Not able to harvest from ${source.url}, header ${source.acceptHeaderValue} is not acceptable",
-                            HarvestException(source.url)
+                            "Not able to harvest from ${trigger.dataSourceUrl}, header ${trigger.acceptHeader} is not acceptable",
+                            HarvestException(trigger.dataSourceUrl)
                         )
                         HarvestReport(
-                            id = source.id,
-                            url = source.url,
+                            runId = trigger.runId,
+                            dataSourceId = trigger.dataSourceId,
+                            dataSourceUrl = trigger.dataSourceUrl,
                             harvestError = true,
                             errorMessage = "Not able to harvest, no accept header supplied",
                             startTime = harvestDate.formatWithOsloTimeZone(),
@@ -62,15 +64,16 @@ class PublicServicesHarvester(
                         )
                     }
                     else -> updateIfChanged(
-                        parseRDFResponse(adapter.fetchServices(source), jenaWriterType),
-                        source.id, source.url, harvestDate, source.publisherId, forceUpdate
+                        parseRDFResponse(adapter.fetchServices(trigger.dataSourceUrl, trigger.acceptHeader!!), jenaWriterType),
+                        trigger.runId, trigger.dataSourceId!!, trigger.dataSourceUrl, harvestDate, trigger.publisherId, trigger.forceUpdate
                     )
                 }
             } catch (ex: Exception) {
-                LOGGER.error("Harvest of ${source.url} failed", ex)
+                LOGGER.error("Harvest of ${trigger.dataSourceUrl} failed", ex)
                 HarvestReport(
-                    id = source.id,
-                    url = source.url,
+                    runId = trigger.runId,
+                    dataSourceId = trigger.dataSourceId,
+                    dataSourceUrl = trigger.dataSourceUrl,
                     harvestError = true,
                     errorMessage = ex.message,
                     startTime = harvestDate.formatWithOsloTimeZone(),
@@ -82,7 +85,7 @@ class PublicServicesHarvester(
             null
         }
 
-    private fun updateIfChanged(harvested: Model, sourceId: String, sourceURL: String, harvestDate: Calendar,
+    private fun updateIfChanged(harvested: Model, runId: String?, sourceId: String, sourceURL: String, harvestDate: Calendar,
                                 publisherId: String?, forceUpdate: Boolean): HarvestReport {
         val dbData = turtleService
             .getHarvestSource(sourceURL)
@@ -91,8 +94,9 @@ class PublicServicesHarvester(
         return if (!forceUpdate && dbData != null && harvested.isIsomorphicWith(dbData)) {
             LOGGER.info("No changes from last harvest of $sourceURL")
             HarvestReport(
-                id = sourceId,
-                url = sourceURL,
+                runId = runId,
+                dataSourceId = sourceId,
+                dataSourceUrl = sourceURL,
                 harvestError = false,
                 startTime = harvestDate.formatWithOsloTimeZone(),
                 endTime = formatNowWithOsloTimeZone()
@@ -101,11 +105,11 @@ class PublicServicesHarvester(
             LOGGER.info("Changes detected, saving data from $sourceURL and updating FDK meta data")
             turtleService.saveAsHarvestSource(harvested, sourceURL)
 
-            updateDB(harvested, sourceId, sourceURL, harvestDate, publisherId, forceUpdate)
+            updateDB(harvested, runId, sourceId, sourceURL, harvestDate, publisherId, forceUpdate)
         }
     }
 
-    private fun updateDB(harvested: Model, sourceId: String, sourceURL: String, harvestDate: Calendar,
+    private fun updateDB(harvested: Model, runId: String?, sourceId: String, sourceURL: String, harvestDate: Calendar,
                          publisherId: String?, forceUpdate: Boolean): HarvestReport {
         val allServices = splitServicesFromRDF(harvested, sourceURL)
         val updatedServices = updateServices(allServices, harvestDate, forceUpdate)
@@ -125,8 +129,9 @@ class PublicServicesHarvester(
             .run { serviceMetaRepository.saveAll(this) }
 
         return HarvestReport(
-            id = sourceId,
-            url = sourceURL,
+            runId = runId,
+            dataSourceId = sourceId,
+            dataSourceUrl = sourceURL,
             harvestError = false,
             startTime = harvestDate.formatWithOsloTimeZone(),
             endTime = formatNowWithOsloTimeZone(),
