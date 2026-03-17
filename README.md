@@ -1,3 +1,12 @@
+⚠️ **Archived / Deprecated**
+
+> This repository is no longer maintained.
+> Its functionality has been replaced by:
+
+➡️ https://github.com/Informasjonsforvaltning/fdk-harvester
+
+---
+
 # FDK Public Service Harvester
 
 This application provides an API for public services harvested from different sources.
